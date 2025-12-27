@@ -1,8 +1,8 @@
 #pragma once
 
 // Paramètres de la fenêtre
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 600;
+const int SCREEN_WIDTH =1000;
+const int SCREEN_HEIGHT = 750;
 
 // Paramètres du jeu Tetris
 const int BLOCK_SIZE = 30; // Taille d'un carré en pixels
@@ -27,5 +27,6 @@ static const Color COLORS[] = {
     {0, 255, 0},     // 4: S (Vert)
     {255, 0, 0},     // 5: Z (Rouge)
     {0, 0, 255},     // 6: J (Bleu)
-    {255, 127, 0}    // 7: L (Orange)
+    {255, 127, 0},    // 7: L (Orange)
+    {128, 128, 128}  // 8: GARBAGE (Gris) <--- AJOUTÉ
 };

@@ -12,3 +12,16 @@
 
 # Fichiers temporaires Windows
 Thumbs.db
+
+# Dossiers à ignorer
+.vscode/
+lib/
+lib_external/
+
+# Binaires
+*.exe
+*.dll
+.h
+
+# Fichiers temporaires
+*.log

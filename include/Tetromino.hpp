@@ -24,6 +24,8 @@ public:
     // Dessin
     void draw(SDL_Renderer* renderer, int offsetX = 0, int offsetY = 0);
 
+    // Dans Tetromino.hpp, section public:
+    void setPosition(int x, int y) { gridX = x; gridY = y; }
     // Accesseurs (Getters) pour plus tard (collisions)
     const std::vector<std::vector<int>>& getShape() const { return shape; }
     int getX() const { return gridX; }
@@ -31,5 +33,4 @@ public:
 
     int getId() const { return id; }
 
-    void setPosition(int x, int y) { gridX = x; gridY = y; }
 };

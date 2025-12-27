@@ -18,11 +18,13 @@ public:
 
     // Dessine le fond du plateau et les blocs (plus tard)
     // On doit passer le "pinceau" (renderer) à la fonction
-    void draw(SDL_Renderer* renderer);
+    void draw(SDL_Renderer* renderer, int xOffset, int yOffset);
     bool isCollision(const Tetromino& piece);
 
     // Ajoute la pièce dans la grille statique
     void lockPiece(const Tetromino& piece);
+
+    void addGarbage(int amount);
 
     // Vérifie et supprime les lignes pleines
     int clearLines(); 

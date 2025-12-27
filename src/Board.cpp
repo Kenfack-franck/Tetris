@@ -1,5 +1,6 @@
 #include "../include/Board.hpp"
 
+
 Board::Board() {
     init();
 }
@@ -9,32 +10,47 @@ void Board::init() {
     grid.resize(BOARD_HEIGHT, std::vector<int>(BOARD_WIDTH, 0));
 }
 
-void Board::draw(SDL_Renderer* renderer) {
-    // 1. Dessiner le contour du plateau (Cadre blanc)
+void Board::draw(SDL_Renderer* renderer, int xOffset, int yOffset) {
+    // 1. Dessiner le contour (Le cadre blanc)
+    // On se base sur xOffset/yOffset au lieu des constantes globales
     SDL_Rect border;
-    border.x = BOARD_START_X - 2;
-    border.y = BOARD_START_Y - 2;
+    border.x = xOffset - 2;
+    border.y = yOffset - 2;
     border.w = (BOARD_WIDTH * BLOCK_SIZE) + 4;
     border.h = (BOARD_HEIGHT * BLOCK_SIZE) + 4;
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Blanc
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderDrawRect(renderer, &border);
 
-    // 2. Dessiner la grille intérieure (lignes grises légères)
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255); // Gris foncé
+    // 2. Dessiner la grille intérieure (Lignes grises)
+    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
 
+    // Lignes verticales
+    for (int x = 0; x <= BOARD_WIDTH; x++) {
+        int xPos = xOffset + (x * BLOCK_SIZE);
+        SDL_RenderDrawLine(renderer, xPos, yOffset, xPos, yOffset + (BOARD_HEIGHT * BLOCK_SIZE));
+    }
 
-    // Dessiner les blocs verrouillés
+    // Lignes horizontales
+    for (int y = 0; y <= BOARD_HEIGHT; y++) {
+        int yPos = yOffset + (y * BLOCK_SIZE);
+        SDL_RenderDrawLine(renderer, xOffset, yPos, xOffset + (BOARD_WIDTH * BLOCK_SIZE), yPos);
+    }
+
+    // 3. Dessiner les blocs déjà posés (verrouillés)
     for (int y = 0; y < BOARD_HEIGHT; y++) {
         for (int x = 0; x < BOARD_WIDTH; x++) {
             int colorId = grid[y][x];
             if (colorId > 0) {
-                Color c = COLORS[colorId];
+                // On récupère la couleur (si tu as une structure COLORS dans Defs.hpp)
+                // Attention : assure-toi que COLORS est accessible
+                Color c = COLORS[colorId]; 
                 SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
                 
                 SDL_Rect rect;
-                rect.x = BOARD_START_X + x * BLOCK_SIZE;
-                rect.y = BOARD_START_Y + y * BLOCK_SIZE;
+                // Calcul de la position relative au xOffset
+                rect.x = xOffset + x * BLOCK_SIZE;
+                rect.y = yOffset + y * BLOCK_SIZE;
                 rect.w = BLOCK_SIZE - 1;
                 rect.h = BLOCK_SIZE - 1;
                 
@@ -43,7 +59,6 @@ void Board::draw(SDL_Renderer* renderer) {
         }
     }
 }
-
 
 bool Board::isCollision(const Tetromino& piece) {
     const auto& shape = piece.getShape(); // On récupère la forme (getter à ajouter dans Tetromino.hpp si pas déjà fait)
@@ -124,3 +139,29 @@ int Board::clearLines() { // Change void par int
     }
     return linesCleared; // On retourne le total
 }
+
+
+
+
+void Board::addGarbage(int amount) {
+    // 1. Décaler tout vers le haut
+    // On perd les lignes du haut (Game Over potentiel non géré ici pour simplifier)
+    for (int y = 0; y < BOARD_HEIGHT - amount; y++) {
+        grid[y] = grid[y + amount];
+    }
+
+    // 2. Remplir le bas avec du gris et un trou
+    for (int y = BOARD_HEIGHT - amount; y < BOARD_HEIGHT; y++) {
+        // Choisir une colonne aléatoire pour le trou
+        int hole = rand() % BOARD_WIDTH;
+        
+        for (int x = 0; x < BOARD_WIDTH; x++) {
+            if (x == hole) {
+                grid[y][x] = 0; // Vide
+            } else {
+                grid[y][x] = 8; // 8 = ID couleur gris (à définir dans Defs.hpp)
+            }
+        }
+    }
+}
+

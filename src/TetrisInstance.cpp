@@ -161,8 +161,8 @@ void TetrisInstance::draw() {
     // // On ajoute un petit +20 en X pour centrer visuellement
     // nextPiece.draw(renderer, textX + 10, offsetY + 210);
 
-    int rightX = offsetX + (BOARD_WIDTH * BLOCK_SIZE) + 20;
-    int leftX = offsetX - 100; // Zone à gauche pour le HOLD
+    int rightX = offsetX + (BOARD_WIDTH * BLOCK_SIZE) + 30;
+    int leftX = offsetX - 110; // Zone à gauche pour le HOLD
 
     SDL_Color white = {255, 255, 255, 255};
     SDL_Color cyan = {0, 255, 255, 255};
@@ -189,7 +189,7 @@ void TetrisInstance::draw() {
     // Non, standard Tetris c'est à gauche.
     // On va dessiner HOLD à gauche, mais il faudra décaler J1 dans Game.cpp plus tard.
     
-    drawText("HOLD", offsetX - 80, offsetY, white);
+    drawText("HOLD", offsetX , offsetY +10, white);
     if (!isHoldEmpty) {
         // Si canHold est faux, on dessine en gris pour dire "pas dispo"
         if (!canHold) {

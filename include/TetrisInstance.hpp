@@ -59,4 +59,5 @@ public:
     // Multijoueur
     int popLinesCleared();       // Récupère et vide le compteur d'attaque
     void addGarbage(int lines);  // Reçoit l'attaque
+    bool getGameOver () const { return isGameOver; } 
 };

@@ -7,8 +7,8 @@ AudioManager::AudioManager() : bgMusic(nullptr), sfxDrop(nullptr), sfxLine(nullp
     }
 
     bgMusic = Mix_LoadMUS("assets/music1.mp3");
-    sfxDrop = Mix_LoadWAV("assets/music2.mp3");
-    sfxLine = Mix_LoadWAV("assets/music3.mp3");
+    sfxDrop = Mix_LoadWAV("assets/music5.mp3");
+    sfxLine = Mix_LoadWAV("assets/music6.mp3");
 
     if (!bgMusic) std::cout << "Attention: Musique non trouvee !" << std::endl;
 }

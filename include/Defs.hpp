@@ -1,7 +1,7 @@
 #pragma once
 
 // Paramètres de la fenêtre
-const int SCREEN_WIDTH =1000;
+const int SCREEN_WIDTH =1200;
 const int SCREEN_HEIGHT = 750;
 
 // Paramètres du jeu Tetris

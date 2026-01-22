@@ -53,7 +53,7 @@ Tetris POO est une implémentation du jeu Tetris classique en C++ utilisant une 
 Lancez la compilation avec la commande suivante (depuis le dossier `tetris/`) :
 
 ```powershell
-& ".\lib\winlibs-x86_64-posix-seh-gcc-14.2.0-mingw-w64ucrt-12.0.0-r2\mingw64\bin\g++.exe" src/*.cpp -I lib_external/include -L lib_external/lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -o main.exe
+& ".\lib\winlibs-x86_64-posix-seh-gcc-14.2.0-mingw-w64ucrt-12.0.0-r2\mingw64\bin\g++.exe" src/*.cpp -I lib_external/include -L lib_external/lib -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf -lSDL2_mixer -o main.exe
 ```
 
 ### Résolution des problèmes courants

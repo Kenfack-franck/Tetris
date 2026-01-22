@@ -1,6 +1,12 @@
 #include "TetrisInstance.hpp"
+#include "AudioManager.hpp"
+
+
+
 
 class Game {
+    AudioManager audio;
+
 private:
     SDL_Renderer* renderer;
     TTF_Font* font;

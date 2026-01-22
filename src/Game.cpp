@@ -7,6 +7,9 @@ Game::Game(SDL_Renderer* ren) : renderer(ren) {
         std::cout << "ERREUR CRITIQUE : TTF_Init n'a pas pu demarrer ! " << TTF_GetError() << std::endl;
     }
 
+    // Lancer la musique au démarrage
+    audio.playMusic();
+
     // 2. ENSUITE : Charger la police
     // Assure-toi que le fichier s'appelle bien "font.ttf" et est dans le dossier "assets"
     font = TTF_OpenFont("assets/font.ttf", 20);
@@ -24,11 +27,11 @@ Game::Game(SDL_Renderer* ren) : renderer(ren) {
 
     // INSTANCIATION DES DEUX JOUEURS
     // Joueur 1 à Gauche (x=50)
-    player1 = new TetrisInstance(renderer, font, 50, 50);
+    player1 = new TetrisInstance(renderer, font, &audio, 50, 50);
 
     // Joueur 2 à Droite (x=550) -> J'ai décalé un peu plus à droite pour éviter le chevauchement
     // Largeur plateau = 300px (10 blocs * 30px). 50 + 300 + Marge = 450 c'était un peu juste.
-    player2 = new TetrisInstance(renderer, font, 550, 50); 
+    player2 = new TetrisInstance(renderer, font,&audio, 600, 50); 
 }
 
 void Game::handleInput(SDL_Event& event) {
@@ -41,12 +44,18 @@ void Game::handleInput(SDL_Event& event) {
             case SDLK_z: player1->rotate(); break;   // Azerty Z
             case SDLK_w: player1->rotate(); break;   // Qwerty W
             case SDLK_s: player1->softDrop(); break;
-            
+            case SDLK_SPACE: player1->hardDrop(); break; // Hard Drop
+            case SDLK_c:     player1->hold(); break;     // Hold
+
         // --- CONTRÔLES JOUEUR 2 (Flèches) ---
             case SDLK_LEFT: player2->moveLeft(); break;
             case SDLK_RIGHT: player2->moveRight(); break;
             case SDLK_UP: player2->rotate(); break;
             case SDLK_DOWN: player2->softDrop(); break;
+            case SDLK_RETURN:   player2->hardDrop(); break; 
+            case SDLK_KP_ENTER: player2->hardDrop(); break;
+            case SDLK_m:        player2->hold(); break;      // Hold (M ou L ou Shift Droit)
+            case SDLK_RSHIFT:   player2->hold(); break;
         }
     }
 }

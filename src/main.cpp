@@ -17,7 +17,7 @@ int main(int argc, char* argv[]) {
     Game game(renderer);
 
     bool running = true;
-    while (running) {
+    while (running && game.isRunning()) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) running = false;

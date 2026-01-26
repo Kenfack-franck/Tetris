@@ -256,8 +256,9 @@ void Game::update() {
         if (net.checkForNewConnection()) {
             std::cout << "Client connecte ! Lancement du jeu..." << std::endl;
 
-            // 1. Synchronisation du Hasard (SEED)
-            int seed = (int)time(0);
+            // 1. Synchronisation du Hasard
+            // On utilise l'heure actuelle pour avoir un nombre unique
+            unsigned int seed = (unsigned int)time(NULL);
             srand(seed); // Je l'applique à moi (Hôte)
             
             // J'envoie la graine au client
@@ -327,8 +328,21 @@ void Game::update() {
                 }
                 // SEED (Valable tout le temps)
                 else if (cmd.find("SEED:") == 0) {
-                    int seed = std::stoi(cmd.substr(5));
-                    srand(seed);
+                    try {
+                        int seed = std::stoi(cmd.substr(5));
+                        
+                        // 1. On applique la graine synchronisée
+                        srand(seed);
+                        std::cout << "SEED recu et applique : " << seed << std::endl;
+
+                        // 2. CRUCIAL : On redémarre le jeu MAINTENANT !
+                        // Cela va recréer les TetrisInstance, et leurs constructeurs vont appeler rand()
+                        // qui utilisera la nouvelle graine synchronisée.
+                        resetGame();
+                        
+                    } catch (...) {
+                        std::cout << "Erreur lecture SEED" << std::endl;
+                    }
                 }
             }
         }
@@ -560,3 +574,5 @@ void Game::renderControlsHelp() {
     // Afficher tout en bas de l'écran
     drawCenteredText(msg, SCREEN_HEIGHT - 30, color);
 }
+
+

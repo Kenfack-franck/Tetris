@@ -4,7 +4,7 @@
 *.obj
 
 # Les DLL à la racine (on ne les versionne pas généralement à la racine)
-*.dll
+#*.dll
 
 # Dossiers de configuration IDE (VS Code)
 .vscode/

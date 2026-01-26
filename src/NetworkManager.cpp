@@ -175,3 +175,6 @@ std::string NetworkManager::receiveData() {
     }
     return "";
 }
+
+
+

@@ -304,6 +304,10 @@ void Game::update() {
                 else if (cmd == "SOFT") remote->softDrop();
                 else if (cmd == "DROP") remote->hardDrop();
                 else if (cmd == "HOLD") remote->hold();
+                // --- AJOUT ICI ---
+                else if (cmd == "FALL") {
+                    remote->networkForceUpdate(); // On force la gravité sur la marionnette
+                }
                 
                 // --- AJOUTER ICI LE BLOC ATK ---
                 else if (cmd.find("ATK:") == 0) {
@@ -350,8 +354,23 @@ void Game::update() {
 
     if (currentState != GameState::PLAY) return;
 
-    player1->update();
-    player2->update();
+        if (!isNetworkGame) {
+        // Mode Local : On met à jour les deux comme avant
+            player1->update();
+            player2->update();
+        } 
+        else {
+            // Mode Réseau : On ne met à jour QUE soi-même !
+            // L'autre est une marionnette, il ne bouge que si on reçoit des ordres.
+            
+            TetrisInstance* me = (net.getRole() == NetworkRole::SERVER) ? player1 : player2;
+            
+            // Si ma pièce tombe naturellement...
+            if (me->update()) {
+                // ... Je préviens l'autre !
+                net.sendData("FALL");
+            }
+        }
 
     // --- GESTION DE L'ATTAQUE ---
     int p1Attack = player1->popLinesCleared();

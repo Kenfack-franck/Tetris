@@ -19,50 +19,21 @@ TetrisInstance::TetrisInstance(SDL_Renderer* ren, TTF_Font* f, AudioManager* aud
     nextPiece.setPosition(0, 0); 
 }
 
-void TetrisInstance::update() {
-    if (isGameOver) return;
+// Changer "void" en "bool"
+bool TetrisInstance::update() {
+    if (isGameOver) return false;
     
     unsigned int currentTime = SDL_GetTicks();
     if (currentTime - lastTime > speed) {
         currentPiece.move(0, 1);
         if (board.isCollision(currentPiece)) {
             currentPiece.move(0, -1);
-
-            
             lockPieceLogic();
-
-            // board.lockPiece(currentPiece);
-            
-            // int lines = board.clearLines();
-            // if (lines > 0) {
-            //     int points = 0;
-            //     switch(lines) {
-            //         case 1: points = 40; break;
-            //         case 2: points = 100; break;
-            //         case 3: points = 300; break;
-            //         case 4: points = 1200; break;
-            //     }
-            //     score += points * (level + 1);
-            //     lastClearedCount += lines;
-
-            //     if (score > (level + 1) * 1000) {
-            //         level++;
-            //         if (speed > 100) speed -= 50;
-            //     }
-            // }
-
-            // // Passage de témoin
-            // currentPiece = nextPiece;
-            // currentPiece.setPosition(4, 0); // On la place au milieu du plateau pour jouer
-            
-            // // Génération nouvelle suivante
-            // nextPiece = Tetromino(rand() % 7 + 1);
-            // nextPiece.setPosition(0, 0); // CORRECTION : On la met à 0,0 pour l'affichage UI
-
-            // if (board.isCollision(currentPiece)) isGameOver = true;
         }
         lastTime = currentTime;
+        return true; // <--- Retourne VRAI si la pièce est tombée (Gravité)
     }
+    return false; // <--- Retourne FAUX sinon
 }
 
 void TetrisInstance::moveLeft() {
@@ -310,4 +281,18 @@ void TetrisInstance::hold() {
     
     // Reset timer gravité pour laisser le temps de réfléchir
     lastTime = SDL_GetTicks();
+}
+
+
+
+// Cette fonction force la gravité sans attendre le timer
+void TetrisInstance::networkForceUpdate() {
+    if (isGameOver) return;
+
+    currentPiece.move(0, 1);
+    if (board.isCollision(currentPiece)) {
+        currentPiece.move(0, -1);
+        lockPieceLogic();
+    }
+    // On ne touche pas à lastTime ici, c'est piloté par le réseau
 }

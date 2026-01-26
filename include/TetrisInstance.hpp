@@ -31,6 +31,7 @@ private:
     unsigned int speed;
     int score;
     int level;
+
     
     // Pour l'attaque multijoueur
     int lastClearedCount; // Combien de lignes on vient de faire ?
@@ -43,8 +44,10 @@ private:
 public:
     TetrisInstance(SDL_Renderer* ren, TTF_Font* f, AudioManager* audioMgr, int x, int y);
 
-    void update();
+    //void update();
     void draw();
+
+    bool update(); 
 
     // Commandes
     void moveLeft();
@@ -59,5 +62,10 @@ public:
     // Multijoueur
     int popLinesCleared();       // Récupère et vide le compteur d'attaque
     void addGarbage(int lines);  // Reçoit l'attaque
+
+
+    void networkForceUpdate();
+
+
     bool getGameOver () const { return isGameOver; } 
 };

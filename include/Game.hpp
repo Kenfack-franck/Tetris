@@ -66,6 +66,8 @@ private:
 
     void renderModeSelection();
 
+     void renderControlsHelp(); // <--- AJOUTER CECI
+
 public:
     Game(SDL_Renderer* ren);
     ~Game(); // Important pour les delete

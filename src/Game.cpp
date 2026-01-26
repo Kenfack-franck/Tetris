@@ -146,33 +146,48 @@ void Game::handleInput(SDL_Event& event) {
 
         // --- ÉTAT PLAY ---
         else if (currentState == GameState::PLAY) {
-            // Touche Pause
-            if (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE) {
+            // Pause (Autorisée seulement en local pour l'instant pour simplifier)
+            if (!isNetworkGame && (event.key.keysym.sym == SDLK_p || event.key.keysym.sym == SDLK_ESCAPE)) {
                 currentState = GameState::PAUSE;
-                //return; // On arrête là pour ne pas traiter d'autres touches
+                return;
             }
-        // --- CONTRÔLES JOUEUR 1 (ZQSD / WASD) ---
-        switch (event.key.keysym.sym) {
-            case SDLK_q: player1->moveLeft(); break; // Azerty A
-            case SDLK_a: player1->moveLeft(); break; // Qwerty A
-            case SDLK_d: player1->moveRight(); break;
-            case SDLK_z: player1->rotate(); break;   // Azerty Z
-            case SDLK_w: player1->rotate(); break;   // Qwerty W
-            case SDLK_s: player1->softDrop(); break;
-            case SDLK_SPACE: player1->hardDrop(); break; // Hard Drop
-            case SDLK_c:     player1->hold(); break;     // Hold
+            
+            // Si en réseau : Echap pour ragequit/menu ? (À gérer plus tard)
+            
+            // --- CONTRÔLES JOUEUR 1 ---
+            // Actif si : Pas de réseau (Local) OU Je suis le Serveur
+            if (!isNetworkGame || net.getRole() == NetworkRole::SERVER) {
+                std::string cmd = "";
+                switch (event.key.keysym.sym) {
+                    case SDLK_q: case SDLK_a: player1->moveLeft(); cmd="L"; break;
+                    case SDLK_d:              player1->moveRight(); cmd="R"; break;
+                    case SDLK_z: case SDLK_w: player1->rotate(); cmd="ROT"; break;
+                    case SDLK_s:              player1->softDrop(); cmd="SOFT"; break;
+                    case SDLK_SPACE:          player1->hardDrop(); cmd="DROP"; break;
+                    case SDLK_c:              player1->hold(); cmd="HOLD"; break;
+                }
+                // Si une commande a été faite et qu'on est en réseau, on l'envoie
+                if (isNetworkGame && !cmd.empty()) net.sendData(cmd);
+            }
 
-        // --- CONTRÔLES JOUEUR 2 (Flèches) ---
-            case SDLK_LEFT: player2->moveLeft(); break;
-            case SDLK_RIGHT: player2->moveRight(); break;
-            case SDLK_UP: player2->rotate(); break;
-            case SDLK_DOWN: player2->softDrop(); break;
-            case SDLK_RETURN:   player2->hardDrop(); break; 
-            case SDLK_KP_ENTER: player2->hardDrop(); break;
-            case SDLK_m:        player2->hold(); break;      // Hold (M ou L ou Shift Droit)
-            case SDLK_RSHIFT:   player2->hold(); break;
+            // --- CONTRÔLES JOUEUR 2 ---
+            // Actif si : Pas de réseau (Local) OU Je suis le Client
+            if (!isNetworkGame || net.getRole() == NetworkRole::CLIENT) {
+                std::string cmd = "";
+                // En réseau client, on peut décider d'utiliser aussi ZQSD ou Flèches.
+                // Pour l'instant, disons qu'on utilise les flèches pour J2.
+                
+                switch (event.key.keysym.sym) {
+                    case SDLK_LEFT:     player2->moveLeft(); cmd="L"; break;
+                    case SDLK_RIGHT:    player2->moveRight(); cmd="R"; break;
+                    case SDLK_UP:       player2->rotate(); cmd="ROT"; break;
+                    case SDLK_DOWN:     player2->softDrop(); cmd="SOFT"; break;
+                    case SDLK_RETURN:   case SDLK_KP_ENTER: player2->hardDrop(); cmd="DROP"; break;
+                    case SDLK_m:        player2->hold(); cmd="HOLD"; break;
+                }
+                if (isNetworkGame && !cmd.empty()) net.sendData(cmd);
+            }
         }
-    }
     
         
     // --- ÉTAT PAUSE ---
@@ -196,6 +211,18 @@ void Game::handleInput(SDL_Event& event) {
         // --- ÉTAT GAME OVER ---
         else if (currentState == GameState::GAME_OVER) {
             if (event.key.keysym.sym == SDLK_SPACE || event.key.keysym.sym == SDLK_RETURN) {
+
+                 // Si on est en réseau, on envoie l'ordre de RESTART
+                if (isNetworkGame) {
+                    net.sendData("RESTART");
+                }
+
+                // On reset localement
+                // ATTENTION : En réseau, il faut renvoyer le SEED aussi ? 
+                // Simplifions : On relance juste resetGame().
+                
+                // Petite astuce : En réseau, seul l'Hôte devrait avoir le droit de relancer
+                // ou alors les deux peuvent. Disons que les deux peuvent.
                 resetGame();
                 currentState = GameState::PLAY;
             }
@@ -228,6 +255,15 @@ void Game::update() {
         // Est-ce qu'un client arrive ?
         if (net.checkForNewConnection()) {
             std::cout << "Client connecte ! Lancement du jeu..." << std::endl;
+
+            // 1. Synchronisation du Hasard (SEED)
+            int seed = (int)time(0);
+            srand(seed); // Je l'applique à moi (Hôte)
+            
+            // J'envoie la graine au client
+            std::string msg = "SEED:" + std::to_string(seed);
+            net.sendData(msg);
+
             resetGame();
             currentState = GameState::PLAY;
             
@@ -238,6 +274,66 @@ void Game::update() {
     }
 
 
+    // --- RÉCEPTION RÉSEAU (Lecture des paquets) ---
+    if (isNetworkGame && (currentState == GameState::PLAY || currentState == GameState::GAME_OVER)) {
+        // On lit tout ce qui est arrivé
+        std::string rawData = net.receiveData();
+        
+        // receiveData peut renvoyer plusieurs commandes collées (ex: "L\nR\n")
+        // Il faudrait idéalement un buffer, mais pour simplifier, on traite le dernier message 
+        // ou on suppose qu'on traite packet par packet.
+        // NOTE: Mon NetworkManager::receiveData simplifié ne lit qu'un bloc. 
+        // S'il contient des \n, il faut le découper.
+        
+        // Simplification : On traite 'rawData'
+        if (!rawData.empty()) {
+            // Qui est l'autre joueur ?
+            TetrisInstance* remote = (net.getRole() == NetworkRole::SERVER) ? player2 : player1;
+
+            // Découpage sommaire par ligne (si plusieurs commandes arrivent vite)
+            size_t pos = 0;
+            while ((pos = rawData.find('\n')) != std::string::npos) {
+                std::string cmd = rawData.substr(0, pos);
+                rawData.erase(0, pos + 1);
+
+                // Analyse de la commande
+                if (cmd == "L") remote->moveLeft();
+                else if (cmd == "R") remote->moveRight();
+                else if (cmd == "ROT") remote->rotate();
+                else if (cmd == "SOFT") remote->softDrop();
+                else if (cmd == "DROP") remote->hardDrop();
+                else if (cmd == "HOLD") remote->hold();
+                
+                // --- AJOUTER ICI LE BLOC ATK ---
+                else if (cmd.find("ATK:") == 0) {
+                    // On récupère le chiffre après les 4 caractères "ATK:"
+                    // Exemple ATK:2 -> on prend "2"
+                    try {
+                        int lines = std::stoi(cmd.substr(4));
+                        // Qui reçoit l'attaque ? C'est MOI (l'opposé du remote)
+                        TetrisInstance* me = (net.getRole() == NetworkRole::SERVER) ? player1 : player2;
+                        me->addGarbage(lines);
+                    } catch (...) {} // Sécurité si le nombre est malformé
+                }
+                // --- AJOUTER ICI LE BLOC GAMEOVER (voir étape suivante) ---
+                else if (cmd == "GAMEOVER") {
+                    currentState = GameState::GAME_OVER;
+                    // audio.playGameOver();
+                }
+                // Commande de Restart (Valable en GAME_OVER)
+                else if (cmd == "RESTART") {
+                    resetGame();
+                    currentState = GameState::PLAY;
+                }
+                // SEED (Valable tout le temps)
+                else if (cmd.find("SEED:") == 0) {
+                    int seed = std::stoi(cmd.substr(5));
+                    srand(seed);
+                }
+            }
+        }
+    }
+
     if (currentState != GameState::PLAY) return;
 
     player1->update();
@@ -247,20 +343,37 @@ void Game::update() {
     int p1Attack = player1->popLinesCleared();
     if (p1Attack > 1) { 
         player2->addGarbage(p1Attack - 1); 
+         // Si je suis J1 (Serveur), je préviens l'autre qu'il est attaqué
+        if (isNetworkGame && net.getRole() == NetworkRole::SERVER) {
+            net.sendData("ATK:" + std::to_string(p1Attack - 1));
+        }
     }
 
     int p2Attack = player2->popLinesCleared();
     if (p2Attack > 1) {
         player1->addGarbage(p2Attack - 1);
+        if (isNetworkGame && net.getRole() == NetworkRole::CLIENT) {
+            net.sendData("ATK:" + std::to_string(p2Attack - 1));
+        }
     }
 
-     // Détection Game Over
-    // Si l'un des deux perd, c'est fini.
-    // (Note: on pourrait attendre que les deux perdent, mais en Versus le premier qui perd a perdu)
-    if (player1->getGameOver() || player2->getGameOver()) {
-        currentState = GameState::GAME_OVER;
-        //audio.playGameOver(); // Si tu as implémenté cette méthode
+    // Détection Game Over
+    // On vérifie d'abord si NOUS avons perdu localement
+    bool serverLost = player1->getGameOver();
+    bool clientLost = player2->getGameOver();
+
+    if (serverLost || clientLost) {
+        // Si on n'est pas déjà en écran Game Over, on envoie le signal
+        if (currentState != GameState::GAME_OVER) {
+            currentState = GameState::GAME_OVER;
+            
+            // Si on est en réseau, on prévient l'autre qu'il y a un mort
+            if (isNetworkGame) {
+                net.sendData("GAMEOVER");
+            }
+        }
     }
+
 }
 
 void Game::render() {
@@ -279,6 +392,8 @@ void Game::render() {
 
         if (player1) player1->draw();
         if (player2) player2->draw();
+
+        renderControlsHelp();
     }
 
     // Affichage des interfaces (Overlays)
@@ -419,4 +534,29 @@ void Game::renderModeSelection() { // Remplace renderMultiChoice
     drawCenteredText("J: Rejoindre en Reseau (Join)", 450, {255, 255, 255, 255});
     
     drawCenteredText("ECHAP: Retour", 550, {150, 150, 150, 255});
+}
+
+
+void Game::renderControlsHelp() {
+    std::string msg;
+    SDL_Color color = {150, 150, 150, 255}; // Gris clair
+
+    if (!isNetworkGame) {
+        // Mode Local
+        msg = "J1 (Gauche): ZQSD + Espace  |  J2 (Droite): Fleches + Entree";
+    } 
+    else {
+        // Mode Réseau
+        if (net.getRole() == NetworkRole::SERVER) {
+            msg = "VOUS ETES J1 (HOTE) >>> Utilisez ZQSD + ESPACE";
+            color = {0, 255, 255, 255}; // Cyan pour qu'il repère bien son côté
+        } 
+        else {
+            msg = "VOUS ETES J2 (INVITE) >>> Utilisez FLECHES + ENTREE";
+            color = {0, 255, 255, 255};
+        }
+    }
+
+    // Afficher tout en bas de l'écran
+    drawCenteredText(msg, SCREEN_HEIGHT - 30, color);
 }

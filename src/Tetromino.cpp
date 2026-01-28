@@ -32,22 +32,36 @@ void Tetromino::rotateBack() {
     rotate(); rotate(); rotate();
 }
 
-// DESSIN AVEC DÉCALAGE (OFFSET)
+// DESSIN AVEC DÉCALAGE (OFFSET) - AVEC EFFET 3D PREMIUM
 void Tetromino::draw(SDL_Renderer* renderer, int xOffset, int yOffset) {
-    Color c = COLORS[id];
-    SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
+    const ColorWithShading& cs = SHADED_COLORS[id];
 
     for (int row = 0; row < shape.size(); row++) {
         for (int col = 0; col < shape[row].size(); col++) {
             if (shape[row][col] != 0) {
                 SDL_Rect rect;
-                // Calcul de la position : Offset Global + Position Grille + Position Bloc
                 rect.x = xOffset + (gridX + col) * BLOCK_SIZE;
                 rect.y = yOffset + (gridY + row) * BLOCK_SIZE;
                 rect.w = BLOCK_SIZE - 1;
                 rect.h = BLOCK_SIZE - 1;
 
+                // Bloc principal vibrant
+                SDL_SetRenderDrawColor(renderer, cs.base.r, cs.base.g, cs.base.b, 255);
                 SDL_RenderFillRect(renderer, &rect);
+
+                // Highlight haut-gauche
+                SDL_SetRenderDrawColor(renderer, cs.light.r, cs.light.g, cs.light.b, 255);
+                SDL_RenderDrawLine(renderer, rect.x, rect.y, rect.x + rect.w - 1, rect.y);
+                SDL_RenderDrawLine(renderer, rect.x, rect.y, rect.x, rect.y + rect.h - 1);
+
+                // Shadow bas-droite
+                SDL_SetRenderDrawColor(renderer, cs.dark.r, cs.dark.g, cs.dark.b, 255);
+                SDL_RenderDrawLine(renderer, rect.x + rect.w - 1, rect.y + 1, rect.x + rect.w - 1, rect.y + rect.h);
+                SDL_RenderDrawLine(renderer, rect.x + 1, rect.y + rect.h - 1, rect.x + rect.w, rect.y + rect.h - 1);
+
+                // Petite lueur centrale
+                SDL_SetRenderDrawColor(renderer, cs.light.r, cs.light.g, cs.light.b, 200);
+                SDL_RenderDrawPoint(renderer, rect.x + 2, rect.y + 2);
             }
         }
     }

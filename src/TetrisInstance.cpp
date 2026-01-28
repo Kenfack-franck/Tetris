@@ -1,10 +1,10 @@
 #include "../include/TetrisInstance.hpp"
 #include "../include/Defs.hpp"
 #include <string>
-#include <stacktrace>
 
 TetrisInstance::TetrisInstance(SDL_Renderer* ren, TTF_Font* f, AudioManager* audioMgr, int x, int y)
     : renderer(ren), font(f),audio(audioMgr), offsetX(x), offsetY(y),
+      isPlayer2(x > 400), // Déterminer si c'est joueur 2 basé sur la position X
       currentPiece(rand() % 7 + 1), 
       nextPiece(rand() % 7 + 1),
       holdPiece(1), // On initialise avec n'importe quoi, isHoldEmpty protège
@@ -19,50 +19,21 @@ TetrisInstance::TetrisInstance(SDL_Renderer* ren, TTF_Font* f, AudioManager* aud
     nextPiece.setPosition(0, 0); 
 }
 
-void TetrisInstance::update() {
-    if (isGameOver) return;
+// Changer "void" en "bool"
+bool TetrisInstance::update() {
+    if (isGameOver) return false;
     
     unsigned int currentTime = SDL_GetTicks();
     if (currentTime - lastTime > speed) {
         currentPiece.move(0, 1);
         if (board.isCollision(currentPiece)) {
             currentPiece.move(0, -1);
-
-            
             lockPieceLogic();
-
-            // board.lockPiece(currentPiece);
-            
-            // int lines = board.clearLines();
-            // if (lines > 0) {
-            //     int points = 0;
-            //     switch(lines) {
-            //         case 1: points = 40; break;
-            //         case 2: points = 100; break;
-            //         case 3: points = 300; break;
-            //         case 4: points = 1200; break;
-            //     }
-            //     score += points * (level + 1);
-            //     lastClearedCount += lines;
-
-            //     if (score > (level + 1) * 1000) {
-            //         level++;
-            //         if (speed > 100) speed -= 50;
-            //     }
-            // }
-
-            // // Passage de témoin
-            // currentPiece = nextPiece;
-            // currentPiece.setPosition(4, 0); // On la place au milieu du plateau pour jouer
-            
-            // // Génération nouvelle suivante
-            // nextPiece = Tetromino(rand() % 7 + 1);
-            // nextPiece.setPosition(0, 0); // CORRECTION : On la met à 0,0 pour l'affichage UI
-
-            // if (board.isCollision(currentPiece)) isGameOver = true;
         }
         lastTime = currentTime;
+        return true; // <--- Retourne VRAI si la pièce est tombée (Gravité)
     }
+    return false; // <--- Retourne FAUX sinon
 }
 
 void TetrisInstance::moveLeft() {
@@ -129,7 +100,7 @@ void TetrisInstance::draw() {
     // 4. Interface Texte (UI)
     auto drawText = [&](std::string txt, int x, int y, SDL_Color col) { // Ajout param couleur
         if(!font) return;
-        SDL_Surface* surf = TTF_RenderText_Solid(font, txt.c_str(), col);
+        SDL_Surface* surf = TTF_RenderUTF8_Solid(font, txt.c_str(), col);
         if(surf) {
             SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
             SDL_Rect dst = {x, y, surf->w, surf->h};
@@ -169,34 +140,42 @@ void TetrisInstance::draw() {
     SDL_Color gray = {150, 150, 150, 255};
 
     // --- DROITE : SCORE & NEXT ---
+    // Boîte NEXT
+    SDL_Rect nextBox = {rightX - 5, offsetY + 170, 110, 140};
+    SDL_SetRenderDrawColor(renderer, 0, 200, 255, 200);
+    SDL_RenderDrawRect(renderer, &nextBox);
+    
     drawText("SCORE", rightX, offsetY + 10, white);
     drawText(std::to_string(score), rightX, offsetY + 40, cyan);
     drawText("NEXT", rightX, offsetY + 180, white);
     nextPiece.draw(renderer, rightX + 10, offsetY + 210);
 
-    // --- GAUCHE : HOLD ---
-    // On dessine le texte HOLD
-    // Attention: Si leftX est < 0 (trop à gauche), ça peut être coupé.
-    // Avec offsetX=50 pour J1, leftX = -50. C'est un problème.
-    // On va afficher le HOLD en haut à gauche du board, ou juste au-dessus.
+    // --- HOLD : EN DESSOUS DU NEXT ---
+    // HOLD et NEXT à la même position X (rightX), HOLD en dessous
+    int holdBoxX = rightX;  // Même position X que NEXT
+    int holdBoxY = offsetY + 320;  // En dessous du NEXT (170 + 140 + 10 de gap)
+    SDL_Rect holdBox = {holdBoxX - 5, holdBoxY, 110, 140};
+    SDL_SetRenderDrawColor(renderer, 200, 0, 200, 200);
+    SDL_RenderDrawRect(renderer, &holdBox);
     
-    // Nouvelle position HOLD : Juste à gauche du board (x - 90px)
-    int holdX = offsetX - 110;
-    // Si c'est J1 (x=50), on n'a pas la place à gauche. On va le mettre au dessus ?
-    // Ou alors on décale tout le monde.
-    
-    // SOLUTION SIMPLE : Afficher HOLD à coté de NEXT pour l'instant (mais plus bas) ?
-    // Non, standard Tetris c'est à gauche.
-    // On va dessiner HOLD à gauche, mais il faudra décaler J1 dans Game.cpp plus tard.
-    
-    drawText("HOLD", offsetX , offsetY +10, white);
-    if (!isHoldEmpty) {
-        // Si canHold est faux, on dessine en gris pour dire "pas dispo"
-        if (!canHold) {
-            // Petite astuce couleur non gérée par draw simple...
-            // On dessine normalement
+    // Texte HOLD
+    SDL_Color holdColor = isHoldEmpty ? gray : white;
+    if (isHoldEmpty) {
+        drawText("HOLD", holdBoxX, holdBoxY + 10, gray);
+        std::string holdText = isPlayer2 ? "PRESS M" : "PRESS C";
+        int textX = holdBoxX - 5; // Positionnement uniforme
+        drawText(holdText, textX, holdBoxY + 50, gray);
+    } else {
+        drawText("HOLD", holdBoxX, holdBoxY + 10, holdColor);
+        // Afficher disponibilité
+        SDL_Color availColor;
+        if (canHold) {
+            availColor = {0, 255, 0, 255};
+        } else {
+            availColor = {255, 100, 100, 255};
         }
-        holdPiece.draw(renderer, offsetX - 90, offsetY + 30);
+        drawText(canHold ? "✓" : "✗", holdBoxX + 40, holdBoxY + 10, availColor);
+        holdPiece.draw(renderer, holdBoxX + 5, holdBoxY + 40);
     }
 
 
@@ -310,4 +289,18 @@ void TetrisInstance::hold() {
     
     // Reset timer gravité pour laisser le temps de réfléchir
     lastTime = SDL_GetTicks();
+}
+
+
+
+// Cette fonction force la gravité sans attendre le timer
+void TetrisInstance::networkForceUpdate() {
+    if (isGameOver) return;
+
+    currentPiece.move(0, 1);
+    if (board.isCollision(currentPiece)) {
+        currentPiece.move(0, -1);
+        lockPieceLogic();
+    }
+    // On ne touche pas à lastTime ici, c'est piloté par le réseau
 }

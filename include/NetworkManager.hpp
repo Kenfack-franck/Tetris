@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include "Manager.hpp"
 
 // Définition des rôles
 enum class NetworkRole {
@@ -18,7 +19,8 @@ enum class NetworkRole {
     CLIENT
 };
 
-class NetworkManager {
+// Dérive de Manager - Démontre l'héritage (Séance 2 & 8)
+class NetworkManager : public Manager {
 private:
     WSADATA wsaData;
     SOCKET mainSocket;   // Le socket d'écoute (pour le serveur) ou de connexion (pour le client)
@@ -27,6 +29,7 @@ private:
     NetworkRole role;
     bool isConnected;
     bool isNonBlocking;  // Pour savoir si on a activé le mode non-bloquant
+    bool initialized;    // Pour tracker l'initialisation
 
     // Helper pour mettre un socket en mode non-bloquant
     void setNonBlocking(SOCKET s);
@@ -35,9 +38,10 @@ public:
     NetworkManager();
     ~NetworkManager();
 
-    // Initialisation
-    bool init(); 
-    void cleanup();
+    // Implémentation des méthodes virtuelles de Manager
+    bool init() override;
+    void cleanup() override;
+    bool isInitialized() const override;
 
     // Gestion de connexion
     std::string getLocalIP(); // Récupère l'IP de la machine (Code Partie)

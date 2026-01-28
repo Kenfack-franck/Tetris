@@ -11,19 +11,23 @@ void Board::init() {
 }
 
 void Board::draw(SDL_Renderer* renderer, int xOffset, int yOffset) {
-    // 1. Dessiner le contour (Le cadre blanc)
-    // On se base sur xOffset/yOffset au lieu des constantes globales
-    SDL_Rect border;
-    border.x = xOffset - 2;
-    border.y = yOffset - 2;
-    border.w = (BOARD_WIDTH * BLOCK_SIZE) + 4;
-    border.h = (BOARD_HEIGHT * BLOCK_SIZE) + 4;
+    // Fond sombre attrayant derrière le plateau
+    SDL_SetRenderDrawColor(renderer, 15, 15, 35, 255);
+    SDL_Rect bgBoard = {xOffset - 5, yOffset - 5, (BOARD_WIDTH * BLOCK_SIZE) + 10, (BOARD_HEIGHT * BLOCK_SIZE) + 10};
+    SDL_RenderFillRect(renderer, &bgBoard);
 
+    // Cadre extérieur blanc brillant (néon style)
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderDrawRect(renderer, &border);
+    SDL_Rect outerBorder = {xOffset - 4, yOffset - 4, (BOARD_WIDTH * BLOCK_SIZE) + 8, (BOARD_HEIGHT * BLOCK_SIZE) + 8};
+    SDL_RenderDrawRect(renderer, &outerBorder);
 
-    // 2. Dessiner la grille intérieure (Lignes grises)
-    SDL_SetRenderDrawColor(renderer, 50, 50, 50, 255);
+    // Cadre intérieur sombre
+    SDL_SetRenderDrawColor(renderer, 60, 60, 80, 255);
+    SDL_Rect innerBorder = {xOffset - 1, yOffset - 1, (BOARD_WIDTH * BLOCK_SIZE) + 2, (BOARD_HEIGHT * BLOCK_SIZE) + 2};
+    SDL_RenderDrawRect(renderer, &innerBorder);
+
+    // Grille subtile bleutée
+    SDL_SetRenderDrawColor(renderer, 40, 60, 100, 180);
 
     // Lignes verticales
     for (int x = 0; x <= BOARD_WIDTH; x++) {
@@ -37,24 +41,39 @@ void Board::draw(SDL_Renderer* renderer, int xOffset, int yOffset) {
         SDL_RenderDrawLine(renderer, xOffset, yPos, xOffset + (BOARD_WIDTH * BLOCK_SIZE), yPos);
     }
 
-    // 3. Dessiner les blocs déjà posés (verrouillés)
+    // Dessiner les blocs avec effet 3D biseauté luxueux
     for (int y = 0; y < BOARD_HEIGHT; y++) {
         for (int x = 0; x < BOARD_WIDTH; x++) {
             int colorId = grid[y][x];
             if (colorId > 0) {
-                // On récupère la couleur (si tu as une structure COLORS dans Defs.hpp)
-                // Attention : assure-toi que COLORS est accessible
-                Color c = COLORS[colorId]; 
-                SDL_SetRenderDrawColor(renderer, c.r, c.g, c.b, 255);
+                const ColorWithShading& cs = SHADED_COLORS[colorId];
                 
                 SDL_Rect rect;
-                // Calcul de la position relative au xOffset
                 rect.x = xOffset + x * BLOCK_SIZE;
                 rect.y = yOffset + y * BLOCK_SIZE;
                 rect.w = BLOCK_SIZE - 1;
                 rect.h = BLOCK_SIZE - 1;
-                
+
+                // Bloc principal couleur vibrante
+                SDL_SetRenderDrawColor(renderer, cs.base.r, cs.base.g, cs.base.b, 255);
                 SDL_RenderFillRect(renderer, &rect);
+
+                // Highlight haut-gauche (effet 3D)
+                SDL_SetRenderDrawColor(renderer, cs.light.r, cs.light.g, cs.light.b, 255);
+                SDL_RenderDrawLine(renderer, rect.x, rect.y, rect.x + rect.w - 1, rect.y);
+                SDL_RenderDrawLine(renderer, rect.x, rect.y, rect.x, rect.y + rect.h - 1);
+
+                // Shadow bas-droite (effet 3D)
+                SDL_SetRenderDrawColor(renderer, cs.dark.r, cs.dark.g, cs.dark.b, 255);
+                SDL_RenderDrawLine(renderer, rect.x + rect.w - 1, rect.y + 1, rect.x + rect.w - 1, rect.y + rect.h);
+                SDL_RenderDrawLine(renderer, rect.x + 1, rect.y + rect.h - 1, rect.x + rect.w, rect.y + rect.h - 1);
+
+                // Accent central pour plus de brillance
+                SDL_SetRenderDrawColor(renderer, cs.light.r, cs.light.g, cs.light.b, 150);
+                if (rect.w > 5) {
+                    SDL_RenderDrawPoint(renderer, rect.x + 2, rect.y + 2);
+                    SDL_RenderDrawPoint(renderer, rect.x + 3, rect.y + 2);
+                }
             }
         }
     }

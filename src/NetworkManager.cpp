@@ -3,29 +3,43 @@
 
 NetworkManager::NetworkManager() 
     : mainSocket(INVALID_SOCKET), clientSocket(INVALID_SOCKET), 
-      role(NetworkRole::NONE), isConnected(false), isNonBlocking(false) {
+      role(NetworkRole::NONE), isConnected(false), isNonBlocking(false), initialized(false) {
+    init();
 }
 
-NetworkManager::~NetworkManager() {
-    cleanup();
-}
-
+// Implémentation de la méthode virtuelle init() de Manager
 bool NetworkManager::init() {
+    if (initialized) return true;  // Déjà initialisé
+    
     // 1. Initialiser Winsock (Version 2.2)
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (result != 0) {
         std::cout << "WSAStartup failed: " << result << std::endl;
+        initialized = false;
         return false;
     }
+    
+    initialized = true;
     return true;
 }
 
+// Implémentation de la méthode virtuelle cleanup() de Manager
 void NetworkManager::cleanup() {
     if (clientSocket != INVALID_SOCKET) closesocket(clientSocket);
     if (mainSocket != INVALID_SOCKET) closesocket(mainSocket);
     WSACleanup();
     isConnected = false;
     role = NetworkRole::NONE;
+    initialized = false;
+}
+
+// Implémentation de la méthode virtuelle isInitialized() de Manager
+bool NetworkManager::isInitialized() const {
+    return initialized;
+}
+
+NetworkManager::~NetworkManager() {
+    cleanup();
 }
 
 void NetworkManager::setNonBlocking(SOCKET s) {
@@ -46,7 +60,7 @@ std::string NetworkManager::getLocalIP() {
     if (getaddrinfo(hostname, NULL, &hints, &res) == 0) {
         char ipStr[INET_ADDRSTRLEN];
         struct sockaddr_in* ipv4 = (struct sockaddr_in*)res->ai_addr;
-        inet_ntop(AF_INET, &(ipv4->sin_addr), ipStr, INET_ADDRSTRLEN);
+        strcpy_s(ipStr, INET_ADDRSTRLEN, inet_ntoa(ipv4->sin_addr));
         freeaddrinfo(res);
         return std::string(ipStr);
     }
@@ -114,7 +128,7 @@ bool NetworkManager::connectToServer(std::string ip, int port) {
 
     sockaddr_in clientService;
     clientService.sin_family = AF_INET;
-    inet_pton(AF_INET, ip.c_str(), &clientService.sin_addr.s_addr);
+    clientService.sin_addr.s_addr = inet_addr(ip.c_str());
     clientService.sin_port = htons(port);
 
     // Tenter la connexion (Bloquant pour l'instant, c'est plus simple pour le client)
@@ -175,3 +189,6 @@ std::string NetworkManager::receiveData() {
     }
     return "";
 }
+
+
+

@@ -1,9 +1,10 @@
 #pragma once
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <memory>  // Pointeurs intelligents - Séance 11
 #include "TetrisInstance.hpp"
 #include "AudioManager.hpp"
-#include "NetworkManager.hpp" // <--- AJOUT
+#include "NetworkManager.hpp"
 
 
 
@@ -27,13 +28,17 @@ private:
     TTF_Font* font;
     AudioManager audio;
     NetworkManager net; // <--- AJOUT : Le gestionnaire réseau
-
-
+    
+    // Images
+    SDL_Texture* bgMenuTexture;     // Image fond du menu
+    SDL_Texture* avatar1Texture;    // Avatar joueur 1
+    SDL_Texture* avatar2Texture;    // Avatar joueur 2
 
     
-    // NOS DEUX JOUEURS !
-    TetrisInstance* player1;
-    TetrisInstance* player2;
+    // NOS DEUX JOUEURS - Pointeurs intelligents (unique_ptr) - Séance 11
+    // Game possède formellement les joueurs - destruction automatique
+    std::unique_ptr<TetrisInstance> player1;
+    std::unique_ptr<TetrisInstance> player2;
 
 
     // 2. La variable d'état
@@ -56,8 +61,13 @@ private:
     void renderMenu();
     void renderPause();
     void renderGameOver();
-     // Helper pour centrer du texte
+    // Helpers pour rendu attrayant
     void drawCenteredText(std::string text, int y, SDL_Color color);
+    void drawGradientBG();
+    void drawAvatar(int x, int y, int size, SDL_Color color);
+    void drawAvatarImage(SDL_Texture* avatarTex, int x, int y, int size);
+    SDL_Texture* loadImage(const std::string& path); // Charger une image PNG/JPG
+    void drawImageBackground(SDL_Texture* bgTex); // Afficher image en fond
 
 
     void renderMultiChoice(); // Nouveau
@@ -65,6 +75,8 @@ private:
     void renderMultiJoin();   // Nouveau
 
     void renderModeSelection();
+
+     void renderControlsHelp(); // <--- AJOUTER CECI
 
 public:
     Game(SDL_Renderer* ren);

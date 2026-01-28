@@ -172,43 +172,6 @@ tetris/
 | **AudioManager** | Gestion de la musique et des effets sonores (héritage de Manager) |
 | **NetworkManager** | Gestion de la communication TCP/IP pour le multijoueur (héritage de Manager) |
 
-## 🎓 Concepts C++ Implémentés
-
-### Séance 1: Introduction aux Objets ✅
-- Définition de classes avec encapsulation (private/public)
-- Constructeurs et destructeurs
-- Membres et méthodes d'instance
-- Exemples: `Game`, `Board`, `Tetromino`, `TetrisInstance`
-
-### Séance 2 & 8: Héritage & Polymorphisme ✅
-- **Hiérarchie Manager**: 
-  - Classe abstraite `Manager` avec méthodes virtuelles
-  - `AudioManager` et `NetworkManager` héritent de `Manager`
-- **Hiérarchie Tetromino**:
-  - Classe de base `Tetromino` avec destructeur virtuel
-  - 7 sous-classes spécialisées: `IPiece`, `OPiece`, `TPiece`, `SPiece`, `ZPiece`, `LPiece`, `JPiece`
-  - Polymorphisme virtuel pour les méthodes `draw()` et `update()`
-
-### Séance 4: STL - Conteneurs & Itérateurs ✅
-- `std::vector<std::vector<int>>` pour la grille du plateau
-- `std::vector` pour les formes des pièces
-- `std::string` pour les messages et communications réseau
-
-### Séance 11: Pointeurs Intelligents ✅
-- `std::unique_ptr<TetrisInstance>` pour les joueurs (player1, player2)
-- `std::make_unique<T>()` pour l'allocation gérée
-- **Avantages**: Destruction automatique, exception-safe, zéro memory leak
-
-### Partiellement Implémenté ⚠️
-- **Séance 5**: Opérateurs et flux (`std::cout`, `std::string`, assignation)
-- **Séance 3**: Conteneurs STL (utilisation de `std::vector`)
-
-### Non Implémenté ❌
-- Séance 6: C++20 (Code compilé en C++17)
-- Séance 7: Gestion d'exceptions (try/catch)
-- Séance 9: Parallélisme et programmation asynchrone
-- Séance 12: Évaluation compile-time (constexpr)
-- Séance 13: Modules C++20
 
 ## 🔧 Technologies utilisées
 
